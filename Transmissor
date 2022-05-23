@@ -1,0 +1,71 @@
+#include <VirtualWire.h>
+#define Sensor1 A1  // Ilumin  Azul      // 
+#define Sensor2 A2  // Umida   Vermelho  // 
+#define Sensor3 A3 //    PH   VERD      //
+
+String mensagem;
+float umidadeFloat;
+float phFloat;
+char data[40];
+
+void setup() {
+  Serial.begin(9600);
+  
+  analogReference(INTERNAL);     // 1,1V para o ponto Vref do ADC; sinal de entrada: 0V a 1,1V
+  
+  vw_set_tx_pin(4); //Define o pino 4 como o transmissor de dados
+  vw_setup(2000);   // Bits per sec
+  
+  Serial.println("---Transmissor Iniciado---");
+}
+
+void loop() {
+  umidadeFloat = analogRead(Sensor2);
+  int umidade = calculaUmidade(umidadeFloat);
+  phFloat = analogRead(Sensor3);
+  int ph = calculaPh(phFloat);
+
+  int meuInteiro = (umidade * 10) + ph; 
+
+  itoa(meuInteiro, data, 10);
+  
+  Serial.println(data);
+  
+  send(data);
+  delay(1000);
+}
+
+// Funções
+
+void send (char *message) {
+
+  vw_send((uint8_t *)message, strlen(message));
+  vw_wait_tx(); // Aguarda o envio de dados
+}
+
+int calculaUmidade(float valor) {
+  int umidade;
+  
+  if (valor > 300) {
+    umidade = (valor/ 100) - 1;
+  } else {
+    umidade = 1;
+  }
+
+  return umidade;
+}
+
+int calculaPh(float valor) {
+  int ph;
+  
+  if (valor > 1000) {
+    ph = 8;
+  } else if (valor > 235){
+    ph = ((valor - 235) / 58.75) + 4;
+  }
+  else {
+    ph = 3;
+  }
+
+  return ph;
+}
